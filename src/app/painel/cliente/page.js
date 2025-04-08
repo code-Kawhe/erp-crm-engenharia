@@ -17,7 +17,7 @@ export default function PainelAdmin() {
 
   return (
     <div className="p-4">
-      <h1 className="text-2xl font-bold">Painel do Administrador</h1>
+      <h1 className="text-2xl font-bold">Painel do Cliente</h1>
       {/* Conteúdo do painel */}
     </div>
   )

@@ -17,7 +17,6 @@ export default function LoginPage() {
       if (email.includes('admin')) router.push('/painel/admin')
       else if (email.includes('cliente')) router.push('/painel/cliente')
       else if (email.includes('gestor')) router.push('/painel/gestor')
-      else if (email.includes('tecnico')) router.push('/painel/tecnico')
       else router.push('/painel')
     } catch (err) {
       alert('Credenciais inválidas.')

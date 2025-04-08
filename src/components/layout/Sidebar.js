@@ -8,6 +8,7 @@ export default function Sidebar({ perfil }) {
 
   const links = {
     admin: [
+      { href: '/painel/admin', label: 'Home' },
       { href: '/painel/admin/projetos', label: 'Projetos' },
       { href: '/painel/admin/usuarios', label: 'Usuários' },
     ],

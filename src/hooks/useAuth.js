@@ -17,7 +17,7 @@ export default function useAuth() {
         const docSnap = await getDoc(docRef)
 
         if (docSnap.exists()) {
-          setPerfil(docSnap.data().perfil) // Ex: 'admin', 'cliente'
+          setPerfil(docSnap.data().perfil)
         }
       } else {
         setUser(null)

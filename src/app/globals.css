@@ -17,3 +17,31 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+.int {
+  height: calc(100vh - 80px - 16px);
+}
+
+.int2 {
+  height: calc(100vh - 80px);
+}
+
+/* Scrollbar global customizada */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 15px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent; /* cor de fundo da trilha */
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #757575; /* cor da alça */
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  border-bottom: 10px solid transparent;
+  border-top: 10px solid transparent;
+  background-clip: content-box;
+}

@@ -4,11 +4,11 @@ import { useRouter } from "next/navigation"
 import { useEffect } from "react"
 
 export default function PainelAdmin() {
-  const { user, loading } = useAuth()
+  const { user, loading, perfil } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
-    if (!loading && (!user || user.perfil !== 'admin')) {
+    if (!loading && (!user || perfil !== 'admin')) {
       router.push('/login')
     }
   }, [user, loading])
@@ -17,8 +17,7 @@ export default function PainelAdmin() {
 
   return (
     <div className="p-4">
-      <h1 className="text-2xl font-bold">Painel do Administrador</h1>
-      {/* Conteúdo do painel */}
+      
     </div>
   )
 }
