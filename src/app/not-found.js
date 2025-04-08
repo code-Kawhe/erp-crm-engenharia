@@ -14,9 +14,7 @@ function Erro404() {
                 <h2>PAGINA NÃO ENCONTRADA</h2>
                 {/* <p>Este endereço Não foi encontrado: {window.location.href}</p> */}
                 <div className='BTNS404'>
-                    <a href="*">Home</a>
-                    <a href="https://kawhealvesdossantos.com.br/projetos">Projetos</a>
-                    <a href="https://kawhealvesdossantos.com.br/contato">Contato</a>
+                    <a href="*">Home</a>    
                 </div>
                 <button onClick={() => router.back()}>Voltar</button>
             </div>
