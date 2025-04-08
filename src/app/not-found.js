@@ -12,7 +12,7 @@ function Erro404() {
             <div class="caution-tape"></div>
             <div className='BG2404'>
                 <h2>PAGINA NÃO ENCONTRADA</h2>
-                <p>Este endereço Não foi encontrado: {window.location.href}</p>
+                {/* <p>Este endereço Não foi encontrado: {window.location.href}</p> */}
                 <div className='BTNS404'>
                     <a href="*">Home</a>
                     <a href="https://kawhealvesdossantos.com.br/projetos">Projetos</a>
