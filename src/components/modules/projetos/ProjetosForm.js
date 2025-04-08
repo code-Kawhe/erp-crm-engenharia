@@ -5,9 +5,12 @@ import { collection, addDoc, serverTimestamp, updateDoc, doc } from 'firebase/fi
 import { ref, uploadBytes, getDownloadURL, uploadBytesResumable, deleteObject } from 'firebase/storage'
 import { toast } from 'react-toastify'
 import confirmar from '@/utils/confirm'
+import Select from 'react-select';
+import makeAnimated from 'react-select/animated';
 
 export default function ProjetosForm({ onClose, projeto }) {
   const [arquivosExistentes, setArquivosExistentes] = useState(projeto?.arquivos || [])
+  const animatedComponents = makeAnimated();
 
   const [formData, setFormData] = useState({
     nome: projeto?.nome || '',
@@ -19,6 +22,17 @@ export default function ProjetosForm({ onClose, projeto }) {
     crea: projeto?.crea || '',
     etapas: projeto?.etapas?.map(e => e.nome) || [],
   })
+
+  const [opt, setOpt] = useState([
+    {value:"Arq", label:"Arquitetonico"},
+    {value:"Est", label:"Estrutural"},
+    {value:"Hid", label:"Hidraulico"},
+    {value:"Ele", label:"Eletrico"},
+    {value:"Ppcip", label:"PPCIP"},
+    {value:"Prem", label:"Pré-moldado"},
+    {value:"Exe", label:"Execução"},
+    {value:"Doc", label:"Documentação"},
+  ])
 
   const [arquivos, setArquivos] = useState([])
   const [uploading, setUploading] = useState(false)
@@ -173,7 +187,15 @@ export default function ProjetosForm({ onClose, projeto }) {
             className="w-full border border-[#6B6B6B] rounded px-3 py-2 bg-white text-[#010721] text-[#011A39]"
             required
           />
-          <select
+          <Select
+            closeMenuOnSelect={false}
+            components={animatedComponents}
+            defaultValue={[colourOptions[4], colourOptions[5]]}
+            isMulti
+            options={colourOptions}
+          />
+
+          {/* <select
             name="tipo"
             value={formData.tipo}
             onChange={handleChange}
@@ -184,15 +206,8 @@ export default function ProjetosForm({ onClose, projeto }) {
             <option value="arquitetônico">Arquitetônico</option>
             <option value="elétrico">Elétrico</option>
             <option value="hidrossanitário">Hidrossanitário</option>
-          </select>
-          <textarea
-            name="escopo"
-            placeholder="Descrição do escopo"
-            value={formData.escopo}
-            onChange={handleChange}
-            className="w-full border border-[#6B6B6B] rounded px-3 py-2 bg-white text-[#010721] text-[#011A39]"
-            rows={3}
-          />
+          </select> */}
+
           <input
             name="equipe"
             placeholder="Equipe técnica"
