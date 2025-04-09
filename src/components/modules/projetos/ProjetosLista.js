@@ -12,6 +12,7 @@ import { useRouter } from 'next/navigation'
 import { deleteObject, listAll, ref } from 'firebase/storage'
 import confirmar from '@/utils/confirm'
 import { toast } from 'react-toastify'
+import { Button } from '@/components/ui/button'
 
 export default function ProjetosLista() {
   const router = useRouter()
@@ -74,12 +75,11 @@ export default function ProjetosLista() {
     <div>
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl font-semibold text-[#011A39]">Projetos</h1>
-        <button
+        <Button
           onClick={() => setMostrarForm(true)}
-          className="bg-[#045CBA] text-white px-4 py-2 rounded"
         >
           Novo Projeto
-        </button>
+        </Button>
       </div>
 
       <div className="overflow-x-auto">
@@ -107,17 +107,17 @@ export default function ProjetosLista() {
                 <td className="px-4 py-2">{projeto.engenheiro}</td>
                 <td className="px-4 py-2">{projeto.crea}</td>
                 <td className="px-4 py-2 flex gap-2">
-                  <button
-                    className="bg-yellow-500 text-white px-3 py-1 rounded text-sm"
+                  <Button
+                    variant='edit'
                     onClick={() => {
                       setProjetoSelecionado(projeto)
                       setMostrarForm(true)
                     }}
                   >
                     Editar
-                  </button>
-                  <button
-                    className="bg-red-600 text-white px-3 py-1 rounded text-sm"
+                  </Button>
+                  <Button
+                    variant='delet'
                     onClick={() =>
                       confirmar("Deseja excluir este projeto?", () => {
                         excluirProjeto(projeto.id)
@@ -125,13 +125,12 @@ export default function ProjetosLista() {
                     }
                   >
                     Excluir
-                  </button>
-                  <button
-                    className="bg-blue-600 text-white px-3 py-1 rounded text-sm"
+                  </Button>
+                  <Button
                     onClick={() => Vizualizar(projeto.id)}
                   >
                     Visualizar
-                  </button>
+                  </Button>
                 </td>
               </tr>
             ))}

@@ -7,6 +7,7 @@ import { toast } from 'react-toastify'
 import confirmar from '@/utils/confirm'
 import Select from 'react-select';
 import makeAnimated from 'react-select/animated';
+import { customStyles } from '@/styles/select'
 
 export default function ProjetosForm({ onClose, projeto }) {
   const [arquivosExistentes, setArquivosExistentes] = useState(projeto?.arquivos || [])
@@ -208,38 +209,6 @@ export default function ProjetosForm({ onClose, projeto }) {
       })
     }
   }
-  
-  const customStyles = {
-    control: (base) => ({
-      ...base,
-      backgroundColor: 'white',
-      borderColor: '#011A39',
-      minHeight: 40,
-    }),
-    multiValue: (base) => ({
-      ...base,
-      backgroundColor: '#011A39',
-      color: 'white',
-    }),
-    multiValueLabel: (base) => ({
-      ...base,
-      color: 'white',
-      fontWeight: 'bold',
-    }),
-    option: (base, state) => ({
-      ...base,
-      backgroundColor: state.isFocused ? '#011A39' : 'white',
-      color: state.isFocused ? 'white' : '#011A39',
-    }),
-    singleValue: (base) => ({
-      ...base,
-      color: '#011A39',
-    }),
-    input: (base) => ({
-      ...base,
-      color: '#011A39',
-    }),
-  }
 
   const handleSelectChange = (selectedOptions, actionMeta) => {
     setFormData({
@@ -258,7 +227,7 @@ export default function ProjetosForm({ onClose, projeto }) {
             placeholder="Nome do projeto"
             value={formData.nome}
             onChange={handleChange}
-            className="w-full border border-[#6B6B6B] rounded px-3 py-2 bg-white text-[#010721] text-[#011A39]"
+            className="w-full border border-[#6B6B6B] rounded px-3 py-2 bg-white text-[#011A39]"
             required
           />
           <Select
@@ -273,46 +242,33 @@ export default function ProjetosForm({ onClose, projeto }) {
             value={formData.projetos}
           />
 
-          {/* <select
-            name="tipo"
-            value={formData.tipo}
-            onChange={handleChange}
-            className="w-full border border-[#6B6B6B] rounded px-3 py-2 bg-white text-[#010721] text-[#011A39]"
-          >
-            <option value="">Selecione o tipo de projeto</option>
-            <option value="estrutural">Estrutural</option>
-            <option value="arquitetônico">Arquitetônico</option>
-            <option value="elétrico">Elétrico</option>
-            <option value="hidrossanitário">Hidrossanitário</option>
-          </select> */}
-
           <input
             name="equipe"
             placeholder="Equipe técnica"
             value={formData.equipe}
             onChange={handleChange}
-            className="w-full border border-[#6B6B6B] rounded px-3 py-2 bg-white text-[#010721] text-[#011A39]"
+            className="w-full border border-[#6B6B6B] rounded px-3 py-2 bg-white text-[#011A39]"
           />
           <input
             name="cliente"
             placeholder="Cliente"
             value={formData.cliente}
             onChange={handleChange}
-            className="w-full border border-[#6B6B6B] rounded px-3 py-2 bg-white text-[#010721] text-[#011A39]"
+            className="w-full border border-[#6B6B6B] rounded px-3 py-2 bg-white text-[#011A39]"
           />
           <input
             name="engenheiro"
             placeholder="Engenheiro responsável"
             value={formData.engenheiro}
             onChange={handleChange}
-            className="w-full border border-[#6B6B6B] rounded px-3 py-2 bg-white text-[#010721] text-[#011A39]"
+            className="w-full border border-[#6B6B6B] rounded px-3 py-2 bg-white text-[#011A39]"
           />
           <input
             name="crea"
             placeholder="CREA"
             value={formData.crea}
             onChange={handleChange}
-            className="w-full border border-[#6B6B6B] rounded px-3 py-2 bg-white text-[#010721] text-[#011A39]"
+            className="w-full border border-[#6B6B6B] rounded px-3 py-2 bg-white text-[#011A39]"
           />
 
           {/* Upload de arquivos */}
@@ -322,7 +278,7 @@ export default function ProjetosForm({ onClose, projeto }) {
               type="file"
               multiple
               onChange={handleFileChange}
-              className="w-full border border-[#6B6B6B] rounded px-3 py-2 bg-white text-[#010721] text-[#011A39]"
+              className="w-full border border-[#6B6B6B] rounded px-3 py-2 bg-white text-[#011A39]"
             />
           </div>
 

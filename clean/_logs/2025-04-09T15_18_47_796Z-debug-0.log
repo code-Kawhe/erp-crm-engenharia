@@ -7,7 +7,7 @@
 6 silly config load:file:C:\Users\kawhe\AppData\Roaming\npm\etc\npmrc
 7 verbose title npm run dev
 8 verbose argv "run" "dev"
-9 verbose logfile logs-max:10 dir:D:\baixar\TESTE\erp-crm-engenharia\clean\_logs\2025-04-07T20_15_55_628Z-
-10 verbose logfile D:\baixar\TESTE\erp-crm-engenharia\clean\_logs\2025-04-07T20_15_55_628Z-debug-0.log
-11 silly logfile done cleaning log files
-12 http fetch GET 200 https://registry.npmjs.org/npm 361ms
+9 verbose logfile logs-max:10 dir:D:\baixar\TESTE\erp-crm-engenharia\clean\_logs\2025-04-09T15_18_47_796Z-
+10 verbose logfile D:\baixar\TESTE\erp-crm-engenharia\clean\_logs\2025-04-09T15_18_47_796Z-debug-0.log
+11 silly logfile start cleaning logs, removing 1 files
+12 silly logfile done cleaning log files
