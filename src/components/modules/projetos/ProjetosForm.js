@@ -1,28 +1,31 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { db, storage } from '@/lib/firebase'
-import { collection, addDoc, serverTimestamp, updateDoc, doc, getDoc } from 'firebase/firestore'
+import { collection, addDoc, serverTimestamp, updateDoc, doc, getDoc, getDocs, query, where } from 'firebase/firestore'
 import { ref, uploadBytes, getDownloadURL, uploadBytesResumable, deleteObject } from 'firebase/storage'
 import { toast } from 'react-toastify'
 import confirmar from '@/utils/confirm'
 import Select from 'react-select';
-import makeAnimated from 'react-select/animated';
 import { customStyles } from '@/styles/select'
+import { buscarTiposProjeto } from '@/types/tipoProjetos'
 
 export default function ProjetosForm({ onClose, projeto }) {
   const [arquivosExistentes, setArquivosExistentes] = useState(projeto?.arquivos || [])
-  const animatedComponents = makeAnimated();
 
-  const [opt, setOpt] = useState([
-    { value: "Arq", label: "Arquitetonico" },
-    { value: "Est", label: "Estrutural" },
-    { value: "Hid", label: "Hidraulico" },
-    { value: "Ele", label: "Eletrico" },
-    { value: "Ppcip", label: "PPCIP" },
-    { value: "Prem", label: "Pré-moldado" },
-    { value: "Exe", label: "Execução" },
-    { value: "Doc", label: "Documentação" },
-  ])
+  const [tiposProjeto, setTiposProjeto] = useState([])
+
+  useEffect(() => {
+    async function carregarTipos() {
+      const tipos = await buscarTiposProjeto()
+      setTiposProjeto(tipos)
+    }
+    carregarTipos()
+  }, [])
+
+  const opt = tiposProjeto.map((tipo) => ({
+    value: tipo.alise,
+    label: tipo.nome
+  }))
 
   const [formData, setFormData] = useState({
     nome: projeto?.nome || '',
@@ -36,8 +39,6 @@ export default function ProjetosForm({ onClose, projeto }) {
       return optEncontrada || { value: nome, label: nome }
     }) || [],
   })
-
-
 
   const [arquivos, setArquivos] = useState([])
   const [uploading, setUploading] = useState(false)
@@ -54,26 +55,26 @@ export default function ProjetosForm({ onClose, projeto }) {
     e.preventDefault()
     const toastId = toast.loading(projeto ? 'Atualizando...' : 'Salvando...')
     setUploading(true)
-  
+
     try {
       if (projeto) {
         // Atualização
         const projetoRef = doc(db, 'projetos', projeto.id)
-  
+
         // Upload dos novos arquivos (evitando duplicados)
         const novosArquivos = []
-  
+
         for (const file of arquivos) {
           const nomeJaExiste = arquivosExistentes.some(a => a.nome === file.name)
-  
+
           if (nomeJaExiste) {
             toast.warning(`O arquivo "${file.name}" já existe e foi ignorado.`)
             continue
           }
-  
+
           const storageRef = ref(storage, `projetos/${projeto.id}/${file.name}`)
           const uploadTask = uploadBytesResumable(storageRef, file)
-  
+
           await new Promise((resolve, reject) => {
             uploadTask.on(
               'state_changed',
@@ -87,16 +88,16 @@ export default function ProjetosForm({ onClose, projeto }) {
             )
           })
         }
-  
+
         // Atualiza Firestore com arquivos existentes (já filtrados) + novos
         const arquivosAtualizados = [...arquivosExistentes, ...novosArquivos]
-  
+
         await updateDoc(projetoRef, {
           ...formData,
           projetos: formData.projetos.map(p => p.label),
           arquivos: arquivosAtualizados,
         })
-  
+
         toast.update(toastId, {
           render: 'Projeto atualizado com sucesso!',
           type: 'success',
@@ -107,24 +108,63 @@ export default function ProjetosForm({ onClose, projeto }) {
         // Criação de novo projeto
         const projetoRef = await addDoc(collection(db, 'projetos'), {
           ...formData,
-          projetos: formData.projetos.map(p => p.label),
+          projetos: formData.projetos.map(p => p.value),
           status: 'aberto',
           criadoEm: serverTimestamp(),
           arquivos: [],
         })
-  
+
+        // Buscar templates de tarefa
+        // Dentro do bloco de criação de novo projeto:
+        const tarefasAgrupadas = [];
+
+        const tiposSelecionados = formData.projetos.map(p => p.value);
+
+        for (const tipo of tiposSelecionados) {
+          const q = query(collection(db, 'templates'), where('tipo', '==', tipo));
+          const snapshot = await getDocs(q);
+
+          if (!snapshot.empty) {
+            const template = snapshot.docs[0].data();
+
+            if (Array.isArray(template.tarefas)) {
+              const tarefasDoTipo = template.tarefas.map(tarefa => ({
+                nome: tarefa.nome,
+                status: "pendente",
+                subtarefas: tarefa.subtasks?.map(sub => ({
+                  nome: typeof sub === 'string' ? sub : sub.nome,
+                  status: "pendente"
+                })) || []
+              }));
+
+              tarefasAgrupadas.push({
+                tipo,
+                tarefas: tarefasDoTipo
+              });
+            } else {
+              toast.warn(`⚠️ Template para "${tipo}" não tem tarefas válidas.`);
+            }
+          } else {
+            toast.warn(`⚠️ Nenhum template encontrado para o tipo: "${tipo}"`);
+          }
+        }
+
+        await updateDoc(projetoRef, {
+          tarefas: tarefasAgrupadas
+        })
+
         const urlsArquivos = []
-  
+
         for (const file of arquivos) {
           const nomeJaExiste = urlsArquivos.some(a => a.nome === file.name)
           if (nomeJaExiste) {
             toast.warning(`Arquivo duplicado: "${file.name}" foi ignorado.`)
             continue
           }
-  
+
           const storageRef = ref(storage, `projetos/${projetoRef.id}/${file.name}`)
           const uploadTask = uploadBytesResumable(storageRef, file)
-  
+
           await new Promise((resolve, reject) => {
             uploadTask.on(
               'state_changed',
@@ -138,9 +178,9 @@ export default function ProjetosForm({ onClose, projeto }) {
             )
           })
         }
-  
+
         await updateDoc(projetoRef, { arquivos: urlsArquivos })
-  
+
         toast.update(toastId, {
           render: 'Projeto criado com sucesso!',
           type: 'success',
@@ -148,7 +188,7 @@ export default function ProjetosForm({ onClose, projeto }) {
           autoClose: 3000,
         })
       }
-  
+
       onClose()
     } catch (error) {
       console.error('Erro ao salvar projeto:', error)
@@ -162,43 +202,43 @@ export default function ProjetosForm({ onClose, projeto }) {
       setUploading(false)
     }
   }
-  
+
 
   const handleRemoverArquivo = async (arquivo) => {
     const toastId = toast.loading('Excluindo...')
-  
+
     try {
       // 🔥 Remover do Storage
       const storageRef = ref(storage, `projetos/${projeto.id}/${arquivo.nome}`)
       await deleteObject(storageRef)
-  
+
       // 🧠 Log dos arquivos antes do filtro
       console.log('ANTES:', arquivosExistentes)
-  
+
       // 🧼 Filtrar
       const novosArquivos = arquivosExistentes.filter(a => a.nome.trim() !== arquivo.nome.trim())
       console.log('DEPOIS DO FILTRO:', novosArquivos)
-  
+
       // 🔄 Atualizar Firestore
       const projetoRef = doc(db, 'projetos', projeto.id)
       await updateDoc(projetoRef, {
         arquivos: novosArquivos
       })
-  
+
       // 📥 Verificar se realmente atualizou
       const atualizado = await getDoc(projetoRef)
       console.log('📦 Documento atualizado:', atualizado.data())
-  
+
       // ✅ Atualizar estado local
       setArquivosExistentes(novosArquivos)
-  
+
       toast.update(toastId, {
         render: 'Excluído com sucesso!',
         type: 'success',
         isLoading: false,
         autoClose: 3000,
       })
-  
+
     } catch (error) {
       console.error('❌ Erro:', error)
       toast.update(toastId, {
@@ -233,7 +273,6 @@ export default function ProjetosForm({ onClose, projeto }) {
           <Select
             name='projetos'
             closeMenuOnSelect={false}
-            components={animatedComponents}
             isMulti
             styles={customStyles}
             options={opt}

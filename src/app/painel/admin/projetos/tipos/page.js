@@ -18,6 +18,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import confirmar from '@/utils/confirm'
+import { toast } from 'react-toastify'
 
 export default function TiposProjetosPage() {
   const [tipos, setTipos] = useState([])
@@ -39,13 +41,27 @@ export default function TiposProjetosPage() {
   }
 
   async function salvarTipo() {
+    const toastId = toast.loading(editando ? 'Atualizando...' : 'Salvando...')
     if (nome.trim() === '' || alise.trim() === '') return
-
     if (editando) {
       const tipoRef = doc(db, 'tiposProjeto', editando.id)
-      await updateDoc(tipoRef, { nome, alise })
+      await updateDoc(tipoRef, { nome, alise }).then(() => {
+        toast.update(toastId, {
+          render: 'Tipo atualizado com sucesso!',
+          type: 'success',
+          isLoading: false,
+          autoClose: 3000,
+        })
+      })
     } else {
-      await addDoc(tiposRef, { nome, alise })
+      await addDoc(tiposRef, { nome, alise }).then(() => {
+        toast.update(toastId, {
+          render: 'Tipo adicionado com sucesso!',
+          type: 'success',
+          isLoading: false,
+          autoClose: 3000,
+        })
+      })
     }
 
     setNome('')
@@ -68,47 +84,68 @@ export default function TiposProjetosPage() {
   }
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
+    <div className="flex-1 overflow-y-auto p-4 int">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-semibold text-[#011A39]">
           Tipos de Projetos
         </h1>
-        <Button onClick={() => setModalOpen(true)}>+ Novo Tipo</Button>
+        <Button onClick={() => {
+          setEditando(null);
+          setNome('');
+          setAlise('');
+          setModalOpen(true);
+        }
+        }
+        >+ Novo Tipo</Button>
       </div>
 
-      {tipos.length === 0 ? (
-        <p className="text-gray-500">Nenhum tipo de projeto cadastrado.</p>
-      ) : (
-        <ul className="space-y-2">
-          {tipos.map((tipo) => (
-            <li
-              key={tipo.id}
-              className="flex items-center justify-between bg-white shadow px-4 py-3 rounded border"
-            >
-              <div>
-                <p className="text-[#011A39] font-medium">{tipo.nome}</p>
-                <p className="text-sm text-gray-500">Alias: {tipo.alise || '-'}</p>
-              </div>
-              <div className="space-x-2">
-                <Button
-                  className="text-sm"
-                  variant="edit"
-                  onClick={() => abrirEdicao(tipo)}
-                >
-                  Editar
-                </Button>
-                <Button
-                  className="text-sm"
-                  variant="delet"
-                  onClick={() => excluirTipo(tipo.id)}
-                >
-                  Excluir
-                </Button>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
+      {
+        tipos.length === 0 ? (
+          <p className="text-gray-500">Nenhum tipo de projeto cadastrado.</p>
+        ) : (
+          <table className="min-w-full bg-white border rounded shadow-md">
+            <thead className="bg-[#011A39] text-white text-left">
+              <tr>
+                <th className="px-4 py-2">Nome</th>
+                <th className="px-4 py-2">Alias</th>
+                <th className="px-4 py-2">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {tipos.length !== 0 ? (
+                tipos.map((tipo, index) => (
+                  <tr key={tipo.id} className="border-t hover:bg-[#F1F5F9] text-[#011A39]">
+                    <td className="px-4 py-2">{tipo.nome}</td>
+                    <td className="px-4 py-2">{tipo.alise || '-'}</td>
+                    <td className="px-4 py-2 flex gap-2">
+                      <Button
+                        className="text-sm"
+                        variant="edit"
+                        onClick={() => abrirEdicao(tipo)}
+                      >
+                        Editar
+                      </Button>
+                      <Button
+                        className="text-sm"
+                        variant="delet"
+                        onClick={() => confirmar("deseja excluir este tipo", () => { excluirTipo(tipo.id) })}
+                      >
+                        Excluir
+                      </Button>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={99} className="text-center text-gray-500 py-4">
+                    Nenhum tipo cadastrado.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        )
+      }
 
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
         <DialogContent>
@@ -134,6 +171,6 @@ export default function TiposProjetosPage() {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </div >
   )
 }

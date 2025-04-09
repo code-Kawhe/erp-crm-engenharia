@@ -96,7 +96,6 @@ export default function ProjetosLista() {
           </thead>
           <tbody>
             {projetos.map((projeto) => (
-
               <tr
                 key={projeto.id}
                 className="border-t hover:bg-[#F1F5F9] text-[#011A39]"

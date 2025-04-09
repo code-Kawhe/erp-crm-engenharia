@@ -13,6 +13,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Select from 'react-select';
 import { customStyles } from "@/styles/select";
+import confirmar from "@/utils/confirm";
+import { toast } from "react-toastify";
+import { buscarTiposProjeto } from "@/types/tipoProjetos";
 
 export default function TemplatesPage() {
     const [templates, setTemplates] = useState([]);
@@ -21,14 +24,26 @@ export default function TemplatesPage() {
     const [taskList, setTaskList] = useState([]);
     const [isEditing, setIsEditing] = useState(false); // NOVO
 
-    const tiposProjeto = [
-        { nome: "Residencial", alise: "residencial" },
-        { nome: "Comercial", alise: "comercial" },
-        { nome: "Industrial", alise: "industrial" },
-        { nome: "Regularização", alise: "regularizacao" },
-        { nome: "Topografia", alise: "topografia" },
-    ];
+    // const tiposProjeto = [
+    //     { nome: "Residencial", alise: "residencial" },
+    //     { nome: "Comercial", alise: "comercial" },
+    //     { nome: "Industrial", alise: "industrial" },
+    //     { nome: "Regularização", alise: "regularizacao" },
+    //     { nome: "Topografia", alise: "topografia" },
+    // ];
 
+    const [tiposProjeto, setTiposProjeto] = useState([])
+    console.log(tiposProjeto)
+
+    useEffect(() => {
+      async function carregarTipos() {
+        const tipos = await buscarTiposProjeto()
+        console.log(tipos)
+        setTiposProjeto(tipos)
+      }
+  
+      carregarTipos()
+    }, [])
 
     useEffect(() => {
         fetchTemplates();
@@ -92,20 +107,48 @@ export default function TemplatesPage() {
     };
 
     const salvarTemplate = async () => {
-        if (!selectedType) return alert("Escolha um tipo de projeto");
+        if (!selectedType) return toast.warn("Selecione um tipo de projeto");
+        const toastId = toast.loading(isEditing ? 'Atualizando...' : 'Salvando...')
         const ref = doc(db, "templates", selectedType);
-        await setDoc(ref, { tipo: selectedType, tarefas: taskList });
-        alert(isEditing ? "Template atualizado!" : "Template criado!");
-        fetchTemplates();
-        closeModal();
+        await setDoc(ref, { tipo: selectedType, tarefas: taskList }).then(() => {
+            toast.update(toastId, {
+                render: (isEditing ? "Template atualizado!" : "Template criado!"),
+                type: 'success',
+                isLoading: false,
+                autoClose: 3000,
+            })
+            fetchTemplates();
+            closeModal();
+        }).catch((e)=>{
+            console.error(e)
+            toast.update(toastId, {
+                render: (isEditing ? "Erro ao atualizar Template" : "Erro ao criar Template"),
+                type: 'error',
+                isLoading: false,
+                autoClose: 3000,
+            })
+        })
     };
 
     const excluirTemplate = async (tipo) => {
-        const confirm = window.confirm(`Deseja excluir o template "${tipo}"?`);
-        if (!confirm) return;
-        await deleteDoc(doc(db, "templates", tipo));
-        alert("Template excluído!");
-        fetchTemplates();
+        const toastId = toast.loading('Excluindo...')
+        await deleteDoc(doc(db, "templates", tipo)).then(() => {
+            toast.update(toastId, {
+                render: 'Tample excluido com sucesso!',
+                type: 'success',
+                isLoading: false,
+                autoClose: 3000,
+            })
+            fetchTemplates();
+        }).catch((e) => {
+            console.error(e)
+            toast.update(toastId, {
+                render: 'Erro ao excluir tamplate',
+                type: 'error',
+                isLoading: false,
+                autoClose: 3000,
+            })
+        })
     };
 
     const tipoOptions = tiposProjeto.map((tipo) => ({
@@ -145,7 +188,7 @@ export default function TemplatesPage() {
                                         Editar
                                     </Button>
                                     <Button
-                                        onClick={() => excluirTemplate(template.tipo)}
+                                        onClick={() => confirmar("Deseja escluir este tamplate", () => { excluirTemplate(template.tipo) })}
                                         variant="delet"
                                     >
                                         Excluir
@@ -215,7 +258,7 @@ export default function TemplatesPage() {
                                 </div>
 
                                 <div className="mt-2 ml-4">
-                                    <h3 className="font-semibold mb-1">Subtarefas</h3>
+                                    {/* <h3 className="font-semibold mb-1">Subtarefas</h3> */}
                                     {task.subtasks.map((sub, subIndex) => (
                                         <div key={subIndex} className="flex items-center mb-1">
                                             <Input

@@ -7,21 +7,23 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="pt-br" webcrx="" foxified-44="">
-      <ToastContainer
-        position="bottom-center"
-        autoClose={5000}
-        limit={3}
-        hideProgressBar
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="dark"
-        transition={Slide}
-      />
-      <body>{children}</body>
+      <body>
+        <ToastContainer
+          position="bottom-center"
+          autoClose={5000}
+          limit={3}
+          hideProgressBar
+          newestOnTop={false}
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="dark"
+          transition={Slide}
+        />
+        {children}
+      </body>
     </html>
   )
 }
