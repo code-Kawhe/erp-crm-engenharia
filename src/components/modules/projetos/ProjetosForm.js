@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { db, storage } from '@/lib/firebase'
-import { collection, addDoc, serverTimestamp, updateDoc, doc } from 'firebase/firestore'
+import { collection, addDoc, serverTimestamp, updateDoc, doc, getDoc } from 'firebase/firestore'
 import { ref, uploadBytes, getDownloadURL, uploadBytesResumable, deleteObject } from 'firebase/storage'
 import { toast } from 'react-toastify'
 import confirmar from '@/utils/confirm'
@@ -12,27 +12,31 @@ export default function ProjetosForm({ onClose, projeto }) {
   const [arquivosExistentes, setArquivosExistentes] = useState(projeto?.arquivos || [])
   const animatedComponents = makeAnimated();
 
+  const [opt, setOpt] = useState([
+    { value: "Arq", label: "Arquitetonico" },
+    { value: "Est", label: "Estrutural" },
+    { value: "Hid", label: "Hidraulico" },
+    { value: "Ele", label: "Eletrico" },
+    { value: "Ppcip", label: "PPCIP" },
+    { value: "Prem", label: "Pré-moldado" },
+    { value: "Exe", label: "Execução" },
+    { value: "Doc", label: "Documentação" },
+  ])
+
   const [formData, setFormData] = useState({
     nome: projeto?.nome || '',
-    tipo: projeto?.tipo || '',
     escopo: projeto?.escopo || '',
     equipe: projeto?.equipe || '',
     cliente: projeto?.cliente || '',
     engenheiro: projeto?.engenheiro || '',
     crea: projeto?.crea || '',
-    etapas: projeto?.etapas?.map(e => e.nome) || [],
+    projetos: projeto?.projetos?.map(nome => {
+      const optEncontrada = opt.find(o => o.label === nome || o.value === nome)
+      return optEncontrada || { value: nome, label: nome }
+    }) || [],
   })
 
-  const [opt, setOpt] = useState([
-    {value:"Arq", label:"Arquitetonico"},
-    {value:"Est", label:"Estrutural"},
-    {value:"Hid", label:"Hidraulico"},
-    {value:"Ele", label:"Eletrico"},
-    {value:"Ppcip", label:"PPCIP"},
-    {value:"Prem", label:"Pré-moldado"},
-    {value:"Exe", label:"Execução"},
-    {value:"Doc", label:"Documentação"},
-  ])
+
 
   const [arquivos, setArquivos] = useState([])
   const [uploading, setUploading] = useState(false)
@@ -49,19 +53,26 @@ export default function ProjetosForm({ onClose, projeto }) {
     e.preventDefault()
     const toastId = toast.loading(projeto ? 'Atualizando...' : 'Salvando...')
     setUploading(true)
-
+  
     try {
       if (projeto) {
         // Atualização
         const projetoRef = doc(db, 'projetos', projeto.id)
-        let arquivosExistentes = projeto.arquivos || []
-
-        // Upload dos novos arquivos
+  
+        // Upload dos novos arquivos (evitando duplicados)
         const novosArquivos = []
+  
         for (const file of arquivos) {
+          const nomeJaExiste = arquivosExistentes.some(a => a.nome === file.name)
+  
+          if (nomeJaExiste) {
+            toast.warning(`O arquivo "${file.name}" já existe e foi ignorado.`)
+            continue
+          }
+  
           const storageRef = ref(storage, `projetos/${projeto.id}/${file.name}`)
           const uploadTask = uploadBytesResumable(storageRef, file)
-
+  
           await new Promise((resolve, reject) => {
             uploadTask.on(
               'state_changed',
@@ -75,15 +86,16 @@ export default function ProjetosForm({ onClose, projeto }) {
             )
           })
         }
-
-        // Juntar os arquivos antigos com os novos
+  
+        // Atualiza Firestore com arquivos existentes (já filtrados) + novos
         const arquivosAtualizados = [...arquivosExistentes, ...novosArquivos]
-
+  
         await updateDoc(projetoRef, {
           ...formData,
+          projetos: formData.projetos.map(p => p.label),
           arquivos: arquivosAtualizados,
         })
-
+  
         toast.update(toastId, {
           render: 'Projeto atualizado com sucesso!',
           type: 'success',
@@ -91,19 +103,27 @@ export default function ProjetosForm({ onClose, projeto }) {
           autoClose: 3000,
         })
       } else {
-        // Criação (já está ok no seu código atual)
+        // Criação de novo projeto
         const projetoRef = await addDoc(collection(db, 'projetos'), {
           ...formData,
+          projetos: formData.projetos.map(p => p.label),
           status: 'aberto',
           criadoEm: serverTimestamp(),
           arquivos: [],
         })
-
+  
         const urlsArquivos = []
+  
         for (const file of arquivos) {
+          const nomeJaExiste = urlsArquivos.some(a => a.nome === file.name)
+          if (nomeJaExiste) {
+            toast.warning(`Arquivo duplicado: "${file.name}" foi ignorado.`)
+            continue
+          }
+  
           const storageRef = ref(storage, `projetos/${projetoRef.id}/${file.name}`)
           const uploadTask = uploadBytesResumable(storageRef, file)
-
+  
           await new Promise((resolve, reject) => {
             uploadTask.on(
               'state_changed',
@@ -117,9 +137,9 @@ export default function ProjetosForm({ onClose, projeto }) {
             )
           })
         }
-
+  
         await updateDoc(projetoRef, { arquivos: urlsArquivos })
-
+  
         toast.update(toastId, {
           render: 'Projeto criado com sucesso!',
           type: 'success',
@@ -127,7 +147,7 @@ export default function ProjetosForm({ onClose, projeto }) {
           autoClose: 3000,
         })
       }
-
+  
       onClose()
     } catch (error) {
       console.error('Erro ao salvar projeto:', error)
@@ -141,30 +161,45 @@ export default function ProjetosForm({ onClose, projeto }) {
       setUploading(false)
     }
   }
+  
 
   const handleRemoverArquivo = async (arquivo) => {
     const toastId = toast.loading('Excluindo...')
+  
     try {
-
-      // Remove do Firebase Storage
+      // 🔥 Remover do Storage
       const storageRef = ref(storage, `projetos/${projeto.id}/${arquivo.nome}`)
       await deleteObject(storageRef)
-
-      // Atualiza Firestore
-      const novosArquivos = arquivosExistentes.filter(a => a.url !== arquivo.url)
+  
+      // 🧠 Log dos arquivos antes do filtro
+      console.log('ANTES:', arquivosExistentes)
+  
+      // 🧼 Filtrar
+      const novosArquivos = arquivosExistentes.filter(a => a.nome.trim() !== arquivo.nome.trim())
+      console.log('DEPOIS DO FILTRO:', novosArquivos)
+  
+      // 🔄 Atualizar Firestore
       const projetoRef = doc(db, 'projetos', projeto.id)
-      await updateDoc(projetoRef, { arquivos: novosArquivos })
-
-      // Atualiza estado local
+      await updateDoc(projetoRef, {
+        arquivos: novosArquivos
+      })
+  
+      // 📥 Verificar se realmente atualizou
+      const atualizado = await getDoc(projetoRef)
+      console.log('📦 Documento atualizado:', atualizado.data())
+  
+      // ✅ Atualizar estado local
       setArquivosExistentes(novosArquivos)
+  
       toast.update(toastId, {
-        render: 'Excluido com sucesso!',
+        render: 'Excluído com sucesso!',
         type: 'success',
         isLoading: false,
         autoClose: 3000,
       })
+  
     } catch (error) {
-      console.error('Erro ao remover arquivo:', error)
+      console.error('❌ Erro:', error)
       toast.update(toastId, {
         render: 'Erro ao remover o arquivo.',
         type: 'error',
@@ -172,6 +207,45 @@ export default function ProjetosForm({ onClose, projeto }) {
         autoClose: 3000,
       })
     }
+  }
+  
+  const customStyles = {
+    control: (base) => ({
+      ...base,
+      backgroundColor: 'white',
+      borderColor: '#011A39',
+      minHeight: 40,
+    }),
+    multiValue: (base) => ({
+      ...base,
+      backgroundColor: '#011A39',
+      color: 'white',
+    }),
+    multiValueLabel: (base) => ({
+      ...base,
+      color: 'white',
+      fontWeight: 'bold',
+    }),
+    option: (base, state) => ({
+      ...base,
+      backgroundColor: state.isFocused ? '#011A39' : 'white',
+      color: state.isFocused ? 'white' : '#011A39',
+    }),
+    singleValue: (base) => ({
+      ...base,
+      color: '#011A39',
+    }),
+    input: (base) => ({
+      ...base,
+      color: '#011A39',
+    }),
+  }
+
+  const handleSelectChange = (selectedOptions, actionMeta) => {
+    setFormData({
+      ...formData,
+      [actionMeta.name]: selectedOptions
+    })
   }
 
   return (
@@ -188,11 +262,15 @@ export default function ProjetosForm({ onClose, projeto }) {
             required
           />
           <Select
+            name='projetos'
             closeMenuOnSelect={false}
             components={animatedComponents}
-            defaultValue={[colourOptions[4], colourOptions[5]]}
             isMulti
-            options={colourOptions}
+            styles={customStyles}
+            options={opt}
+            placeholder="Tipos de projetos..."
+            onChange={handleSelectChange}
+            value={formData.projetos}
           />
 
           {/* <select
