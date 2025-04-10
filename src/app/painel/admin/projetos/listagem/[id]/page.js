@@ -1,28 +1,93 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams } from 'next/navigation'
-import { collection, doc, getDoc, getDocs, updateDoc } from 'firebase/firestore'
-import { db } from '@/lib/firebase'
+import { arrayUnion, collection, doc, Firestore, getDoc, getDocs, updateDoc } from 'firebase/firestore'
+import { db, storage } from '@/lib/firebase'
 import { Button } from '@/components/ui/button'
 import AddTasksModal from '@/components/modules/projetos/AddTasksModal'
 import { Span } from '@/components/ui/span'
 import DropdownMenu from '@/components/ui/dropDown'
 import confirmar from '@/utils/confirm'
+import { deleteObject, getDownloadURL, ref, uploadBytes, uploadBytesResumable } from 'firebase/storage'
+import { toast } from 'react-toastify'
 
 export default function ProjetoDetalhes() {
   const { id } = useParams()
   const [projeto, setProjeto] = useState(null)
   const [loading, setLoading] = useState(true)
-
   const [modalAberto, setModalAberto] = useState(false)
   const [tipoModal, setTipoModal] = useState(null)
   const [grupoSelecionado, setGrupoSelecionado] = useState(null)
   const [tarefaSelecionada, setTarefaSelecionada] = useState(null)
-
   const [showModalTemplate, setShowModalTemplate] = useState(false)
   const [templatesDisponiveis, setTemplatesDisponiveis] = useState([])
   const [templateSelecionado, setTemplateSelecionado] = useState('')
 
+  const inputArquivoRef = useRef(null)
+
+
+  const handleUploadArquivo = async (e) => {
+    const toastId = toast.loading('Enviando...')
+    const arquivos = Array.from(e.target.files)
+    if (!arquivos.length) return
+
+    const urlsArquivos = []
+    const arquivosExistentes = projeto.arquivos || []
+
+    for (const file of arquivos) {
+      const nomeJaExiste = arquivosExistentes.some(a => a.nome === file.name)
+      if (nomeJaExiste) {
+        toast.warning(`Arquivo duplicado: "${file.name}" foi ignorado.`)
+        continue
+      }
+
+      const storageRef = ref(storage, `projetos/${id}/${file.name}`)
+      const uploadTask = uploadBytesResumable(storageRef, file)
+
+      await new Promise((resolve, reject) => {
+        uploadTask.on(
+          'state_changed',
+          null,
+          reject,
+          async () => {
+            const url = await getDownloadURL(uploadTask.snapshot.ref)
+            urlsArquivos.push({ nome: file.name, url })
+            resolve()
+          }
+        )
+      })
+    }
+
+    if (urlsArquivos.length > 0) {
+      try {
+        const projetoRef = doc(db, 'projetos', id)
+        await updateDoc(projetoRef, {
+          arquivos: arrayUnion(...urlsArquivos)
+        })
+
+        toast.update(toastId, {
+          render: 'Enviado com sucesso!',
+          type: 'success',
+          isLoading: false,
+          autoClose: 3000,
+        })
+        // Recarregue os dados se necessário, ou atualize localmente
+      } catch (error) {
+        console.error('Erro ao salvar arquivos no Firestore:', error)
+        toast.update(toastId, {
+          render: 'Erro ao enviar o arquivo.',
+          type: 'error',
+          isLoading: false,
+          autoClose: 3000,
+        })
+      }
+    }
+
+    // Limpa o input para permitir reenvio do mesmo nome futuramente
+    e.target.value = ''
+  }
+
+  //alimenta os "tamplates disponiveis"
   useEffect(() => {
     const fetchTemplates = async () => {
       if (!projeto || !projeto.tarefas) return // <- proteção aqui
@@ -95,7 +160,7 @@ export default function ProjetoDetalhes() {
     setTemplateSelecionado('')
   }
 
-
+  //alimenta o "projeto"
   useEffect(() => {
     const fetchProjeto = async () => {
       try {
@@ -113,7 +178,7 @@ export default function ProjetoDetalhes() {
     }
 
     if (id) fetchProjeto()
-  }, [id])
+  }, [id, projeto])
 
   const atualizarProjeto = async (tarefasAtualizadas) => {
     const docRef = doc(db, 'projetos', id)
@@ -202,7 +267,6 @@ export default function ProjetoDetalhes() {
     setTarefaSelecionada(null)
   }
 
-  //adicionar tarefa
   const adicionarTarefa = (grupoIndex, nome) => {
     const novasTarefas = [...projeto.tarefas]
     const novaTarefa = {
@@ -214,7 +278,6 @@ export default function ProjetoDetalhes() {
     atualizarProjeto(novasTarefas)
   }
 
-  //adicionar sub tarefa
   const adicionarSubtarefa = (grupoIndex, tarefaIndex, nome) => {
     const novasTarefas = [...projeto.tarefas]
     const novaSub = {
@@ -262,6 +325,37 @@ export default function ProjetoDetalhes() {
     abrirModal('subtarefa', grupoIndex, tarefaIndex)
   }
 
+  const handleRemoverArquivo = async (arquivo) => {
+    const toastId = toast.loading('Excluindo...')
+
+    try {
+      // 🔥 Remover do Storage
+      const storageRef = ref(storage, `projetos/${projeto.id}/${arquivo.nome}`)
+      await deleteObject(storageRef)
+
+      // 🧼 Filtrar e atualizar no Firestore
+      const novosArquivos = projeto.arquivos.filter(a => a.nome.trim() !== arquivo.nome.trim())
+
+      const projetoRef = doc(db, 'projetos', projeto.id)
+      await updateDoc(projetoRef, { arquivos: novosArquivos })
+
+      toast.update(toastId, {
+        render: 'Excluído com sucesso!',
+        type: 'success',
+        isLoading: false,
+        autoClose: 3000,
+      })
+    } catch (error) {
+      console.error('❌ Erro:', error)
+      toast.update(toastId, {
+        render: 'Erro ao remover o arquivo.',
+        type: 'error',
+        isLoading: false,
+        autoClose: 3000,
+      })
+    }
+  }
+
   return (
     <div className="p-6 text-[#011A39] int">
       <h1 className="text-2xl font-bold text-[#011A39] mb-4">Detalhes do Projeto</h1>
@@ -276,7 +370,7 @@ export default function ProjetoDetalhes() {
         <p><strong>Cliente:</strong> {projeto.cliente}</p>
       </div>
 
-      {/* Arquivos */}
+      {/* Arquivos ------ */}
       <div className="bg-white p-4 rounded shadow mt-5 mb-5">
         <h3 className="text-lg font-semibold mb-2 text-[#011A39]">Arquivos Enviados</h3>
         {projeto.arquivos?.length > 0 ? (
@@ -289,14 +383,50 @@ export default function ProjetoDetalhes() {
                 >
                   {arquivo.nome}
                 </a>
+                <Button
+                  onClick={() => confirmar("deseja excluir este arquivo", () => handleRemoverArquivo(arquivo))}
+                  variant='delet2'
+                >
+                  Excluir
+                </Button>
               </li>
             ))}
+            <input
+              type="file"
+              onChange={handleUploadArquivo}
+              ref={inputArquivoRef}
+              className="hidden"
+            />
+            <Button
+              variant="default"
+              onClick={() => inputArquivoRef.current?.click()}
+              className="mb-3"
+            >
+              + Adicionar Arquivo
+            </Button>
           </ul>
         ) : (
-          <p className="text-sm text-gray-500">Nenhum arquivo enviado.</p>
+          <>
+            <p className="text-sm text-gray-500">Nenhum arquivo enviado.</p>
+            <input
+              type="file"
+              onChange={handleUploadArquivo}
+              ref={inputArquivoRef}
+              className="hidden"
+            />
+            <Button
+              variant="default"
+              onClick={() => inputArquivoRef.current?.click()}
+              className="mb-3"
+            >
+              + Adicionar Arquivo
+            </Button>
+          </>
         )}
       </div>
+      {/* Arquivos ------ */}
 
+      {/* Tarefas ------ */}
       <AddTasksModal
         aberto={modalAberto}
         onClose={fecharModal}
@@ -309,14 +439,12 @@ export default function ProjetoDetalhes() {
           }
         }}
       />
-
       <Button
         onClick={() => setShowModalTemplate(true)}
         className="mb-4"
       >
         + Adicionar Template
       </Button>
-
       {projeto.tarefas?.map((grupo, grupoIndex) => (
         <div key={grupoIndex} className="border border-gray-300 p-3 rounded mb-3">
 
@@ -326,7 +454,7 @@ export default function ProjetoDetalhes() {
               title=". . ."
               items={[
                 { label: 'Adicionar Tarefa', onClick: () => abrirModal('tarefa', grupoIndex), variant: "if" },
-                { label: 'Remover Tamplate', onClick: () => confirmar("deseja excluir este Tamplate",()=>removerTemplateDoProjeto(grupo.tipo)), variant: "dan" }
+                { label: 'Remover Tamplate', onClick: () => confirmar("deseja excluir este Tamplate", () => removerTemplateDoProjeto(grupo.tipo)), variant: "dan" }
               ]}
               variant='out'
             />
@@ -343,7 +471,7 @@ export default function ProjetoDetalhes() {
                   title=". . ."
                   items={[
                     (tarefa.status === 'pendente' && { label: 'Adicionar Tarefa', onClick: () => abrirModalSubtarefa(grupoIndex, tarefaIndex), variant: "if" }),
-                    { label: 'Remover Tarefa', onClick: () => confirmar("deseja excluir esta Tarefa",()=>removerTarefa(grupoIndex, tarefaIndex)), variant: "dan" }
+                    { label: 'Remover Tarefa', onClick: () => confirmar("deseja excluir esta Tarefa", () => removerTarefa(grupoIndex, tarefaIndex)), variant: "dan" }
                   ]}
                   variant='out'
                 />
@@ -388,7 +516,7 @@ export default function ProjetoDetalhes() {
                     <DropdownMenu
                       title=". . ."
                       items={[
-                        { label: 'Remover Subtarefa', onClick: () => confirmar("deseja excluir esta subtarefa",()=>removerSubtarefa(grupoIndex, tarefaIndex, subIndex)) , variant: "dan" }
+                        { label: 'Remover Subtarefa', onClick: () => confirmar("deseja excluir esta subtarefa", () => removerSubtarefa(grupoIndex, tarefaIndex, subIndex)), variant: "dan" }
                       ]}
                       variant='out'
                     />
@@ -422,7 +550,6 @@ export default function ProjetoDetalhes() {
           ))}
         </div>
       ))}
-
       {showModalTemplate && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded shadow w-full max-w-md">
@@ -446,8 +573,7 @@ export default function ProjetoDetalhes() {
           </div>
         </div>
       )}
-
-
+      {/* Tarefas ------ */}
     </div>
   )
 }
