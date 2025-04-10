@@ -2,13 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { db } from "@/lib/firebase";
-import {
-    collection,
-    doc,
-    setDoc,
-    getDocs,
-    deleteDoc,
-} from "firebase/firestore";
+import {collection, doc, setDoc, getDocs, deleteDoc } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Select from 'react-select';
@@ -21,16 +15,9 @@ export default function TemplatesPage() {
     const [templates, setTemplates] = useState([]);
     const [showModal, setShowModal] = useState(false);
     const [selectedType, setSelectedType] = useState("");
+    const [selectedName, setSelectedName] = useState("");
     const [taskList, setTaskList] = useState([]);
     const [isEditing, setIsEditing] = useState(false); // NOVO
-
-    // const tiposProjeto = [
-    //     { nome: "Residencial", alise: "residencial" },
-    //     { nome: "Comercial", alise: "comercial" },
-    //     { nome: "Industrial", alise: "industrial" },
-    //     { nome: "Regularização", alise: "regularizacao" },
-    //     { nome: "Topografia", alise: "topografia" },
-    // ];
 
     const [tiposProjeto, setTiposProjeto] = useState([])
     console.log(tiposProjeto)
@@ -110,7 +97,11 @@ export default function TemplatesPage() {
         if (!selectedType) return toast.warn("Selecione um tipo de projeto");
         const toastId = toast.loading(isEditing ? 'Atualizando...' : 'Salvando...')
         const ref = doc(db, "templates", selectedType);
-        await setDoc(ref, { tipo: selectedType, tarefas: taskList }).then(() => {
+        await setDoc(ref, {
+            tipo: selectedType,
+            tarefas: taskList,
+            nome: selectedName
+        }).then(() => {
             toast.update(toastId, {
                 render: (isEditing ? "Template atualizado!" : "Template criado!"),
                 type: 'success',
@@ -197,7 +188,7 @@ export default function TemplatesPage() {
                             </tr>
                         ))
                     ) : (
-                        <tr>
+                        <tr key={"1"}>
                             <td colSpan={99} className="text-center text-gray-500 py-4">
                                 Nenhum template cadastrado.
                             </td>
@@ -225,7 +216,10 @@ export default function TemplatesPage() {
                             <label className="font-medium mr-2">Tipo de Projeto:</label>
                             <Select
                                 value={tipoOptions.find((opt) => opt.value === selectedType) || null}
-                                onChange={(selected) => setSelectedType(selected ? selected.value : '')}
+                                onChange={(selected) => {
+                                    setSelectedType(selected ? selected.value : '')
+                                    setSelectedName(selected ? selected.label : '')
+                                }}
                                 options={tipoOptions}
                                 isDisabled={isEditing}
                                 styles={customStyles}

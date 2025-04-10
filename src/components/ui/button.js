@@ -6,7 +6,7 @@ export function Button({ children, className = '', variant = 'def', ...props }) 
     edit: 'bg-yellow-500 text-white hover:bg-yellow-600',
     delet: 'bg-red-500 text-white hover:bg-red-600',
     delet2: 'text-red-500 font-bold ml-2',
-    final: 'bg-green-500 text-white px-4 py-2 rounded mr-2',
+    final: 'bg-green-600 text-white px-4 py-2 rounded mr-2 hover:bg-green-700',
   }
 
   return (

@@ -139,6 +139,7 @@ export default function ProjetosForm({ onClose, projeto }) {
 
               tarefasAgrupadas.push({
                 tipo,
+                nome: template.nome,
                 tarefas: tarefasDoTipo
               });
             } else {
@@ -279,6 +280,7 @@ export default function ProjetosForm({ onClose, projeto }) {
             placeholder="Tipos de projetos..."
             onChange={handleSelectChange}
             value={formData.projetos}
+            isDisabled={projeto ? true : false}
           />
 
           <input
