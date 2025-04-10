@@ -398,7 +398,7 @@ export default function ProjetoDetalhes() {
               className="hidden"
             />
             <Button
-              variant="default"
+              variant="def"
               onClick={() => inputArquivoRef.current?.click()}
               className="mb-3"
             >
@@ -407,7 +407,7 @@ export default function ProjetoDetalhes() {
           </ul>
         ) : (
           <>
-            <p className="text-sm text-gray-500">Nenhum arquivo enviado.</p>
+            <p className="text-sm text-gray-500 mb-5">Nenhum arquivo enviado.</p>
             <input
               type="file"
               onChange={handleUploadArquivo}
@@ -415,7 +415,7 @@ export default function ProjetoDetalhes() {
               className="hidden"
             />
             <Button
-              variant="default"
+              variant="def"
               onClick={() => inputArquivoRef.current?.click()}
               className="mb-3"
             >
