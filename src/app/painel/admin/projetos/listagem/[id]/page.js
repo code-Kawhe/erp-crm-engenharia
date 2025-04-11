@@ -29,21 +29,21 @@ export default function ProjetoDetalhes() {
     const toastId = toast.loading('Enviando...')
     const arquivos = Array.from(e.target.files)
     if (!arquivos.length) return
-  
+
     const urlsArquivos = []
     const arquivosExistentes = projeto.arquivos || []
-  
+
     for (const file of arquivos) {
       const nomeJaExiste = arquivosExistentes.some(a => a.nome === file.name)
       if (nomeJaExiste) {
         toast.warning(`Arquivo duplicado: "${file.name}" foi ignorado.`)
         continue
       }
-  
+
       const storagePath = `projetos/${id}/${file.name}`
       const storageRef = ref(storage, storagePath)
       const uploadTask = uploadBytesResumable(storageRef, file)
-  
+
       await new Promise((resolve, reject) => {
         uploadTask.on(
           'state_changed',
@@ -52,56 +52,78 @@ export default function ProjetoDetalhes() {
           async () => {
             const url = await getDownloadURL(uploadTask.snapshot.ref)
             const arquivoData = { nome: file.name, url }
-  
+
             // Se for um tipo compatível com Forge, envia para o Forge
-            const extensao = file.name.split('.').pop().toLowerCase()
-            const tiposForge = ['dwg', 'dxf', 'dwf', 'step', 'stl', 'rvt']
-            if (tiposForge.includes(extensao)) {
-              try {
-                const uploadForgeResponse = await fetch('/api/forge/upload', {
-                  method: 'POST',
-                  body: JSON.stringify({
-                    path: url, // 🔄 agora enviamos a URL pública
-                    fileName: file.name,
-                    projetoId: id,
-                  }),
-                  headers: {
-                    'Content-Type': 'application/json',
-                  },
-                })
-  
-                const { urn } = await uploadForgeResponse.json()
-  
-                if (urn) {
-                  arquivoData.urn = urn // ✅ Adiciona URN ao arquivo
-                }
-              } catch (error) {
-                console.error('Erro ao enviar para Forge:', error)
-                toast.error(`Erro ao enviar "${file.name}" para o Forge.`)
+            // const extensao = file.name.split('.').pop().toLowerCase()
+            // const tiposForge = ['dwg', 'dxf', 'dwf', 'step', 'stl', 'rvt']
+            // if (tiposForge.includes(extensao)) {
+            //   try {
+            //     const uploadForgeResponse = await fetch('/api/forge/upload', {
+            //       method: 'POST',
+            //       body: JSON.stringify({
+            //         path: url, // 🔄 agora enviamos a URL pública
+            //         fileName: file.name,
+            //         projetoId: id,
+            //       }),
+            //       headers: {
+            //         'Content-Type': 'application/json',
+            //       },
+            //     })
+
+            //     const { urn } = await uploadForgeResponse.json()
+
+            //     if (urn) {
+            //       arquivoData.urn = urn // ✅ Adiciona URN ao arquivo
+            //     }
+            //   } catch (error) {
+            //     console.error('Erro ao enviar para Forge:', error)
+            //     toast.error(`Erro ao enviar "${file.name}" para o Forge.`)
+            //   }
+            // }
+
+            // se for compativel com
+            const response = await fetch('/api/bimserver/convert', {
+              method: 'POST',
+              body: JSON.stringify({
+                path: url,
+                fileName: file.name,
+                projetoId: id,
+              }),
+              headers: {
+                'Content-Type': 'application/json',
+              },
+            })
+            
+            const { ifcUrl } = await response.json()
+            
+            if (ifcUrl) {
+                arquivoData.ifcUrl = ifcUrl
+              } else {
+                toast.warning(`Conversão para IFC falhou para "${file.name}".`)
               }
-            }
-  
+              
+
             urlsArquivos.push(arquivoData)
             resolve()
           }
         )
       })
     }
-  
+
     if (urlsArquivos.length > 0) {
       try {
         const projetoRef = doc(db, 'projetos', id)
         await updateDoc(projetoRef, {
           arquivos: arrayUnion(...urlsArquivos),
         })
-  
+
         toast.update(toastId, {
           render: 'Enviado com sucesso!',
           type: 'success',
           isLoading: false,
           autoClose: 3000,
         })
-  
+
         // Atualize os dados localmente se necessário
       } catch (error) {
         console.error('Erro ao salvar arquivos no Firestore:', error)
@@ -113,10 +135,10 @@ export default function ProjetoDetalhes() {
         })
       }
     }
-  
+
     e.target.value = ''
   }
-  
+
   //alimenta os "tamplates disponiveis"
   useEffect(() => {
     const fetchTemplates = async () => {
