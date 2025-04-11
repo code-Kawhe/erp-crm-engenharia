@@ -25,25 +25,25 @@ export default function ProjetoDetalhes() {
 
   const inputArquivoRef = useRef(null)
 
-
   const handleUploadArquivo = async (e) => {
     const toastId = toast.loading('Enviando...')
     const arquivos = Array.from(e.target.files)
     if (!arquivos.length) return
-
+  
     const urlsArquivos = []
     const arquivosExistentes = projeto.arquivos || []
-
+  
     for (const file of arquivos) {
       const nomeJaExiste = arquivosExistentes.some(a => a.nome === file.name)
       if (nomeJaExiste) {
         toast.warning(`Arquivo duplicado: "${file.name}" foi ignorado.`)
         continue
       }
-
-      const storageRef = ref(storage, `projetos/${id}/${file.name}`)
+  
+      const storagePath = `projetos/${id}/${file.name}`
+      const storageRef = ref(storage, storagePath)
       const uploadTask = uploadBytesResumable(storageRef, file)
-
+  
       await new Promise((resolve, reject) => {
         uploadTask.on(
           'state_changed',
@@ -51,42 +51,72 @@ export default function ProjetoDetalhes() {
           reject,
           async () => {
             const url = await getDownloadURL(uploadTask.snapshot.ref)
-            urlsArquivos.push({ nome: file.name, url })
+            const arquivoData = { nome: file.name, url }
+  
+            // Se for um tipo compatível com Forge, envia para o Forge
+            const extensao = file.name.split('.').pop().toLowerCase()
+            const tiposForge = ['dwg', 'dxf', 'dwf', 'step', 'stl', 'rvt']
+            if (tiposForge.includes(extensao)) {
+              try {
+                const uploadForgeResponse = await fetch('/api/forge/upload', {
+                  method: 'POST',
+                  body: JSON.stringify({
+                    path: url, // 🔄 agora enviamos a URL pública
+                    fileName: file.name,
+                    projetoId: id,
+                  }),
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                })
+  
+                const { urn } = await uploadForgeResponse.json()
+  
+                if (urn) {
+                  arquivoData.urn = urn // ✅ Adiciona URN ao arquivo
+                }
+              } catch (error) {
+                console.error('Erro ao enviar para Forge:', error)
+                toast.error(`Erro ao enviar "${file.name}" para o Forge.`)
+              }
+            }
+  
+            urlsArquivos.push(arquivoData)
             resolve()
           }
         )
       })
     }
-
+  
     if (urlsArquivos.length > 0) {
       try {
         const projetoRef = doc(db, 'projetos', id)
         await updateDoc(projetoRef, {
-          arquivos: arrayUnion(...urlsArquivos)
+          arquivos: arrayUnion(...urlsArquivos),
         })
-
+  
         toast.update(toastId, {
           render: 'Enviado com sucesso!',
           type: 'success',
           isLoading: false,
           autoClose: 3000,
         })
-        // Recarregue os dados se necessário, ou atualize localmente
+  
+        // Atualize os dados localmente se necessário
       } catch (error) {
         console.error('Erro ao salvar arquivos no Firestore:', error)
         toast.update(toastId, {
-          render: 'Erro ao enviar o arquivo.',
+          render: 'Erro ao salvar arquivos no projeto.',
           type: 'error',
           isLoading: false,
           autoClose: 3000,
         })
       }
     }
-
-    // Limpa o input para permitir reenvio do mesmo nome futuramente
+  
     e.target.value = ''
   }
-
+  
   //alimenta os "tamplates disponiveis"
   useEffect(() => {
     const fetchTemplates = async () => {
