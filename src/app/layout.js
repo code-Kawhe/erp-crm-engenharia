@@ -7,7 +7,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="pt-br" webcrx="" foxified-44="">
-      <body>
+      <body className="Bodyk">
         <ToastContainer
           position="bottom-center"
           autoClose={5000}

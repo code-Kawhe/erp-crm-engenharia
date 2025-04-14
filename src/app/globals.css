@@ -25,6 +25,22 @@ body {
 
 .int2 {
   height: calc(100vh - 80px);
+  overflow-y: auto;
+}
+
+.int3 {
+  height: calc(100vh - 80px - 16px - 35px);
+}
+
+.int4 {
+  height: calc(100vh - 80px - 16px - 110px);
+  width: calc(100vw - 500px);
+  overflow: auto;
+}
+
+.int5 {
+  height: calc(100vh - 80px - 16px - 15px);
+  overflow: hidden;
 }
 
 /* Scrollbar global customizada */
@@ -45,4 +61,10 @@ body {
   border-bottom: 10px solid transparent;
   border-top: 10px solid transparent;
   background-clip: content-box;
+}
+
+.Bodyk {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
 }

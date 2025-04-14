@@ -52,57 +52,6 @@ export default function ProjetoDetalhes() {
           async () => {
             const url = await getDownloadURL(uploadTask.snapshot.ref)
             const arquivoData = { nome: file.name, url }
-
-            // Se for um tipo compatível com Forge, envia para o Forge
-            // const extensao = file.name.split('.').pop().toLowerCase()
-            // const tiposForge = ['dwg', 'dxf', 'dwf', 'step', 'stl', 'rvt']
-            // if (tiposForge.includes(extensao)) {
-            //   try {
-            //     const uploadForgeResponse = await fetch('/api/forge/upload', {
-            //       method: 'POST',
-            //       body: JSON.stringify({
-            //         path: url, // 🔄 agora enviamos a URL pública
-            //         fileName: file.name,
-            //         projetoId: id,
-            //       }),
-            //       headers: {
-            //         'Content-Type': 'application/json',
-            //       },
-            //     })
-
-            //     const { urn } = await uploadForgeResponse.json()
-
-            //     if (urn) {
-            //       arquivoData.urn = urn // ✅ Adiciona URN ao arquivo
-            //     }
-            //   } catch (error) {
-            //     console.error('Erro ao enviar para Forge:', error)
-            //     toast.error(`Erro ao enviar "${file.name}" para o Forge.`)
-            //   }
-            // }
-
-            // se for compativel com
-            const response = await fetch('/api/bimserver/convert', {
-              method: 'POST',
-              body: JSON.stringify({
-                path: url,
-                fileName: file.name,
-                projetoId: id,
-              }),
-              headers: {
-                'Content-Type': 'application/json',
-              },
-            })
-            
-            const { ifcUrl } = await response.json()
-            
-            if (ifcUrl) {
-                arquivoData.ifcUrl = ifcUrl
-              } else {
-                toast.warning(`Conversão para IFC falhou para "${file.name}".`)
-              }
-              
-
             urlsArquivos.push(arquivoData)
             resolve()
           }

@@ -1,11 +1,12 @@
 import { getDownloadURL, ref } from 'firebase/storage'
-import { db, storage } from '@/lib/firebase'
+import { storage } from '@/lib/firebase'
 import VisualizadorImagemComZoom from '@/components/modules/projetos/VisualizadorImagemComZoom'
-import IfcViewer from '@/components/modules/projetos/IfcViewer'
-import { doc, getDoc } from 'firebase/firestore'
+import TextViewer from '@/components/modules/projetos/TextViewer'
+import * as XLSX from 'xlsx'
+import ExcelViewer from '@/components/modules/projetos/ExcelViewer'
 
-export default async function VisualizarArquivo({ params: { id, nome } }) {
-  // const { id, nome } = params
+export default async function VisualizarArquivo({ params }) {
+  const { id, nome } = params
   const decodedNome = decodeURIComponent(nome)
   const ext = decodedNome.split('.').pop().toLowerCase()
 
@@ -15,22 +16,31 @@ export default async function VisualizarArquivo({ params: { id, nome } }) {
   // Define os tipos de arquivos
   const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)
   const isPDF = ext === 'pdf'
-  const isCAD = ['dwg', 'dxf', 'dwf', 'step', 'stl', 'rvt', 'skp'].includes(ext)
-  const isIFC = ext === 'ifc'
+  const isText = ['txt', 'md', 'json', 'csv', 'log', 'xml', 'html', 'js'].includes(ext)
+  const isWord = ['doc', 'docx'].includes(ext)
+  const isExcel = ['xls', 'xlsx'].includes(ext)
 
-  // Busca dados do projeto
-  let ifcUrl = null
-  try {
-    const docRef = doc(db, 'projetos', id)
-    const projetoSnap = await getDoc(docRef)
+  if (isText) {
+    const response = await fetch(url)
+    const conteudo = await response.text()
+    return (
+      <div className="p-2">
+        <TextViewer conteudo={conteudo} nome={decodedNome} url={url} />
+      </div>
+    )
+  }
 
-    if (projetoSnap.exists()) {
-      const projeto = projetoSnap.data()
-      const arquivoInfo = projeto.arquivos?.find(a => a.nome === decodedNome)
-      ifcUrl = arquivoInfo?.ifcUrl || null
-    }
-  } catch (err) {
-    console.error('Erro ao buscar dados do Firestore:', err)
+  if (isExcel) {
+    const res = await fetch(url)
+    const buffer = await res.arrayBuffer()
+
+    const base64 = Buffer.from(buffer).toString('base64')
+
+    return (
+      <div className="p-2">
+        <ExcelViewer base64={base64} nome={decodedNome} />
+      </div>
+    )
   }
 
   return (
@@ -46,26 +56,17 @@ export default async function VisualizarArquivo({ params: { id, nome } }) {
         />
       )}
 
-      {/* Visualizador IFC */}
-      {isIFC && <IfcViewer url={url} />}
-
-      {/* Arquivo CAD com conversão IFC disponível */}
-      {isCAD && ifcUrl && (
-        <div className="h-full">
-          <IfcViewer url={ifcUrl} />
-        </div>
+      {isWord && (
+        <iframe
+          src={`https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`}
+          className="w-full h-full border border-[#011A39]"
+          allowFullScreen
+        />
       )}
 
-      {/* Arquivo CAD sem conversão ainda */}
-      {isCAD && !ifcUrl && (
-        <div className="p-6 text-center text-red-600">
-          <p className="font-semibold text-lg mb-2">Este arquivo ainda não foi convertido para IFC.</p>
-          <p>Envie novamente para que seja processado ou aguarde o processamento automático.</p>
-        </div>
-      )}
 
       {/* Outros arquivos não suportados */}
-      {!isImage && !isPDF && !isCAD && !isIFC && (
+      {!isImage && !isPDF && !isText && !isWord && (
         <div className="p-6 text-center">
           <p className="mb-2">Visualização não suportada para este tipo de arquivo.</p>
           <a
