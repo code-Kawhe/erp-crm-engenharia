@@ -3,7 +3,7 @@
 import * as XLSX from 'xlsx'
 import { useEffect, useState } from 'react'
 
-export default function ExcelViewer({ base64 }) {
+export default function ExcelViewer({ base64, url, nome}) {
     const [sheets, setSheets] = useState([])
     const [activeSheet, setActiveSheet] = useState('')
     const [sheetData, setSheetData] = useState([])
@@ -63,6 +63,7 @@ export default function ExcelViewer({ base64 }) {
                         {name}
                     </button>
                 ))}
+                <a href={url} className='px-3 py-1 rounded-full border text-sm'>Baixar: {nome}</a>
             </div>
 
             {/* Controle de zoom */}

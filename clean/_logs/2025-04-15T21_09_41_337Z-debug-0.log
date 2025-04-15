@@ -5,9 +5,14 @@
 4 silly config load:file:D:\baixar\TESTE\erp-crm-engenharia\.npmrc
 5 silly config load:file:C:\Users\kawhe\.npmrc
 6 silly config load:file:C:\Users\kawhe\AppData\Roaming\npm\etc\npmrc
-7 verbose title npm run dev
-8 verbose argv "run" "dev"
-9 verbose logfile logs-max:10 dir:D:\baixar\TESTE\erp-crm-engenharia\clean\_logs\2025-04-14T11_38_53_378Z-
-10 verbose logfile D:\baixar\TESTE\erp-crm-engenharia\clean\_logs\2025-04-14T11_38_53_378Z-debug-0.log
+7 verbose title npm tun dev
+8 verbose argv "tun" "dev"
+9 verbose logfile logs-max:10 dir:D:\baixar\TESTE\erp-crm-engenharia\clean\_logs\2025-04-15T21_09_41_337Z-
+10 verbose logfile D:\baixar\TESTE\erp-crm-engenharia\clean\_logs\2025-04-15T21_09_41_337Z-debug-0.log
 11 silly logfile start cleaning logs, removing 1 files
-12 silly logfile done cleaning log files
+12 verbose cwd D:\baixar\TESTE\erp-crm-engenharia
+13 verbose os Windows_NT 10.0.22631
+14 verbose node v22.11.0
+15 verbose npm  v11.1.0
+16 verbose exit 1
+17 verbose code 1

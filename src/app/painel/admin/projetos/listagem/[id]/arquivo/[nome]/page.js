@@ -4,9 +4,10 @@ import VisualizadorImagemComZoom from '@/components/modules/projetos/Visualizado
 import TextViewer from '@/components/modules/projetos/TextViewer'
 import * as XLSX from 'xlsx'
 import ExcelViewer from '@/components/modules/projetos/ExcelViewer'
+import MostraEspecial from '@/components/modules/projetos/MostraEspecial'
 
-export default async function VisualizarArquivo({ params }) {
-  const { id, nome } = params
+export default async   function VisualizarArquivo(props) {
+  const { id, nome } = props.params
   const decodedNome = decodeURIComponent(nome)
   const ext = decodedNome.split('.').pop().toLowerCase()
 
@@ -16,9 +17,10 @@ export default async function VisualizarArquivo({ params }) {
   // Define os tipos de arquivos
   const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)
   const isPDF = ext === 'pdf'
-  const isText = ['txt', 'md', 'json', 'csv', 'log', 'xml', 'html', 'js'].includes(ext)
+  const isText = ['txt', 'md', 'json', 'csv', 'log', 'xml', 'html', 'js', 'yml'].includes(ext)
   const isWord = ['doc', 'docx'].includes(ext)
   const isExcel = ['xls', 'xlsx'].includes(ext)
+  const isSpecial = ['cdr', 'psd', 'ai', 'skp', 'dwg'].includes(ext)
 
   if (isText) {
     const response = await fetch(url)
@@ -38,7 +40,7 @@ export default async function VisualizarArquivo({ params }) {
 
     return (
       <div className="p-2">
-        <ExcelViewer base64={base64} nome={decodedNome} />
+        <ExcelViewer base64={base64} nome={decodedNome} url={url} />
       </div>
     )
   }
@@ -62,6 +64,10 @@ export default async function VisualizarArquivo({ params }) {
           className="w-full h-full border border-[#011A39]"
           allowFullScreen
         />
+      )}
+
+      {isSpecial && (
+        <MostraEspecial url={url} nome={decodedNome} />
       )}
 
 

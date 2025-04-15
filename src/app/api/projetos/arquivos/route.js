@@ -1,39 +1,44 @@
-'use client'
+// src/app/api/projetos/CloudConverter/route.js
+import { NextResponse } from 'next/server'
 
-import { useEffect, useState } from 'react'
+export async function POST(req) {
+  const body = await req.json()
+  const { fileUrl, format } = body
 
-export default function TextViewer({ url, fileName }) {
-  const [conteudo, setConteudo] = useState('')
-  const [erro, setErro] = useState(null)
-
-  useEffect(() => {
-    const carregarTexto = async () => {
-      try {
-        console.log('Buscando arquivo:', url)
-        const res = await fetch(url, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'text/plain',
+  try {
+    const response = await fetch('https://api.cloudconvert.com/v2/jobs', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${process.env.CLOUDCONVERT_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        tasks: {
+          import: {
+            operation: 'import/url',
+            url: fileUrl
           },
-        })
-        if (!res.ok) throw new Error('Falha ao carregar o arquivo')
-        const texto = await res.text()
-        setConteudo(texto)
-      } catch (err) {
-        console.error('Erro ao carregar texto:', err)
-        setErro('Erro ao carregar o conteúdo do arquivo.')
-      }
-    }
+          convert: {
+            operation: 'convert',
+            input: 'import',
+            output_format: format || 'pdf'
+          },
+          export: {
+            operation: 'export/url',
+            input: 'convert'
+          }
+        }
+      })
+    })
 
-    if (url) carregarTexto()
-  }, [url])
+    const data = await response.json()
+    const exportTask = data.data.tasks.find(task => task.name === 'export')
+    const downloadUrl = exportTask.result.files[0].url
 
-  if (erro) return <div className="p-4 text-red-600">{erro}</div>
-
-  return (
-    <div className="p-6 text-sm whitespace-pre-wrap bg-gray-100 text-black max-h-[90vh] overflow-auto rounded shadow-inner">
-      <h2 className="font-bold mb-2">{fileName}</h2>
-      {conteudo || 'Carregando...'}
-    </div>
-  )
+    return NextResponse.json({ downloadUrl })
+  } catch (error) {
+    console.error('[CloudConvert Error]', error)
+    return NextResponse.json({ error: 'Erro na conversão' }, { status: 500 })
+  }
 }
+  
