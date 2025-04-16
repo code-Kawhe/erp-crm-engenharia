@@ -8,6 +8,7 @@ import confirmar from '@/utils/confirm'
 import Select from 'react-select';
 import { customStyles } from '@/styles/select'
 import { buscarTiposProjeto } from '@/types/tipoProjetos'
+import { Button } from '@/components/ui/button'
 
 export default function ProjetosForm({ onClose, projeto }) {
   const [arquivosExistentes, setArquivosExistentes] = useState(projeto?.arquivos || [])
@@ -131,9 +132,11 @@ export default function ProjetosForm({ onClose, projeto }) {
               const tarefasDoTipo = template.tarefas.map(tarefa => ({
                 nome: tarefa.nome,
                 status: "pendente",
+                campos:[],
                 subtarefas: tarefa.subtasks?.map(sub => ({
                   nome: typeof sub === 'string' ? sub : sub.nome,
-                  status: "pendente"
+                  status: "pendente",
+                  campos:[]
                 })) || []
               }));
 
@@ -332,13 +335,13 @@ export default function ProjetosForm({ onClose, projeto }) {
                     <a href={arquivo.url} target="_blank" rel="noopener noreferrer" className="hover:underline">
                       {arquivo.nome}
                     </a>
-                    <button
+                    <Button
                       type="button"
                       onClick={() => confirmar("Deseja escluir este arquivo?", () => { handleRemoverArquivo(arquivo) })}
-                      className="text-red-600 text-sm ml-4 hover:underline"
+                      variant='delet2'
                     >
                       Remover
-                    </button>
+                    </Button>
                   </li>
                 ))}
               </ul>
@@ -348,21 +351,21 @@ export default function ProjetosForm({ onClose, projeto }) {
 
 
           <div className="flex justify-end gap-2 mt-4">
-            <button
+            <Button
               type="button"
               onClick={onClose}
-              className="bg-[#6B6B6B] text-white px-4 py-2 rounded"
+              variant='out'
               disabled={uploading}
             >
               Cancelar
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
-              className="bg-[#045CBA] text-white px-4 py-2 rounded"
+              variant='final'
               disabled={uploading}
             >
               {uploading ? 'Salvando...' : 'Salvar'}
-            </button>
+            </Button>
           </div>
         </form>
       </div>

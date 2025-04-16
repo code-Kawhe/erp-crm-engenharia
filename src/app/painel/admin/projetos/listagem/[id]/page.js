@@ -24,6 +24,23 @@ export default function ProjetoDetalhes() {
   const [templateSelecionado, setTemplateSelecionado] = useState('')
   const [arquivoOpen, setArquivoOpen] = useState(false)
   const [pjOpen, setPjOpen] = useState(false)
+  const [modalAbertoCampoPersonalizado, setModalAbertoCampoPersonalizado] = useState(false)
+
+  const camposPerzonalizado = [
+    { label: "Texto", value: "text" },
+    { label: "Texto longo", value: "longText" },
+    { label: "Data", value: "date" },
+    { label: "Numero", value: "Number" },
+    { label: "Etiquetas", value: "tags" },
+    { label: "Dinheiro", value: "money" },
+    { label: "Site", value: "url" },
+    { label: "E-mail", value: "mail" },
+    { label: "Telefone", value: "cell" },
+    { label: "Localização", value: "location" },
+    { label: "Avaliação", value: "assessment" },
+    { label: "Assinatura", value: "Sign" },
+    { label: "Checkbox", value: "checkbox" },
+  ]
 
   const inputArquivoRef = useRef(null)
 
@@ -36,8 +53,8 @@ export default function ProjetoDetalhes() {
     const arquivosExistentes = projeto.arquivos || []
 
     for (const file of arquivos) {
-      const nomeJaExiste = arquivosExistentes.some(a => a.nome === file.name)
-      if (nomeJaExiste) {
+      const labelJaExiste = arquivosExistentes.some(a => a.label === file.name)
+      if (labelJaExiste) {
         toast.warning(`Arquivo duplicado: "${file.name}" foi ignorado.`)
         continue
       }
@@ -53,7 +70,7 @@ export default function ProjetoDetalhes() {
           reject,
           async () => {
             const url = await getDownloadURL(uploadTask.snapshot.ref)
-            const arquivoData = { nome: file.name, url }
+            const arquivoData = { label: file.name, url }
             urlsArquivos.push(arquivoData)
             resolve()
           }
@@ -70,7 +87,7 @@ export default function ProjetoDetalhes() {
 
         toast.update(toastId, {
           render: 'Enviado com sucesso!',
-          type: 'success',
+          value: 'success',
           isLoading: false,
           autoClose: 3000,
         })
@@ -80,7 +97,7 @@ export default function ProjetoDetalhes() {
         console.error('Erro ao salvar arquivos no Firestore:', error)
         toast.update(toastId, {
           render: 'Erro ao salvar arquivos no projeto.',
-          type: 'error',
+          value: 'error',
           isLoading: false,
           autoClose: 3000,
         })
@@ -131,13 +148,15 @@ export default function ProjetoDetalhes() {
       ...(projeto.tarefas || []),
       {
         tipo: template.tipo,
-        nome: template.nome,
+        label: template.label,
         tarefas: template.tarefas.map(tarefa => ({
           ...tarefa,
           status: 'pendente',
+          campos: [],
           subtarefas: (tarefa.subtasks || []).map(sub => ({
             ...sub,
-            status: 'pendente'
+            status: 'pendente',
+            campos: []
           }))
         }))
       }
@@ -270,10 +289,10 @@ export default function ProjetoDetalhes() {
     setTarefaSelecionada(null)
   }
 
-  const adicionarTarefa = (grupoIndex, nome) => {
+  const adicionarTarefa = (grupoIndex, label) => {
     const novasTarefas = [...projeto.tarefas]
     const novaTarefa = {
-      nome,
+      label,
       status: 'pendente',
       subtarefas: []
     }
@@ -281,10 +300,10 @@ export default function ProjetoDetalhes() {
     atualizarProjeto(novasTarefas)
   }
 
-  const adicionarSubtarefa = (grupoIndex, tarefaIndex, nome) => {
+  const adicionarSubtarefa = (grupoIndex, tarefaIndex, label) => {
     const novasTarefas = [...projeto.tarefas]
     const novaSub = {
-      nome,
+      label,
       status: 'pendente'
     }
 
@@ -333,18 +352,18 @@ export default function ProjetoDetalhes() {
 
     try {
       // 🔥 Remover do Storage
-      const storageRef = ref(storage, `projetos/${projeto.id}/${arquivo.nome}`)
+      const storageRef = ref(storage, `projetos/${projeto.id}/${arquivo.label}`)
       await deleteObject(storageRef)
 
       // 🧼 Filtrar e atualizar no Firestore
-      const novosArquivos = projeto.arquivos.filter(a => a.nome.trim() !== arquivo.nome.trim())
+      const novosArquivos = projeto.arquivos.filter(a => a.label.trim() !== arquivo.label.trim())
 
       const projetoRef = doc(db, 'projetos', projeto.id)
       await updateDoc(projetoRef, { arquivos: novosArquivos })
 
       toast.update(toastId, {
         render: 'Excluído com sucesso!',
-        type: 'success',
+        value: 'success',
         isLoading: false,
         autoClose: 3000,
       })
@@ -352,7 +371,7 @@ export default function ProjetoDetalhes() {
       console.error('❌ Erro:', error)
       toast.update(toastId, {
         render: 'Erro ao remover o arquivo.',
-        type: 'error',
+        value: 'error',
         isLoading: false,
         autoClose: 3000,
       })
@@ -366,12 +385,29 @@ export default function ProjetoDetalhes() {
     setPjOpen(!pjOpen)
   }
 
+  const handleAddCampoInTerefa = () => {
+
+  }
+  const handleAddCampoInSubTerefa = () => {
+
+  }
+
+
+
+  const abrirModalCampoPersonalizado = () => {
+    setModalAbertoCampoPersonalizado(true)
+  }
+
+  const fecharModalCampoPersonalizado = () => {
+    setModalAbertoCampoPersonalizado(false)
+  }
+
   return (
     <div className="p-6 text-[#011A39] int">
       <h1 className="text-2xl font-bold text-[#011A39] mb-4">Detalhes do Projeto</h1>
 
       <div className="bg-white p-4 rounded shadow mb-6 text-[#011A39]">
-        <h2 className="text-xl font-semibold text-[#011A39] mb-2">{projeto.nome}</h2>
+        <h2 className="text-xl font-semibold text-[#011A39] mb-2">{projeto.label}</h2>
         <p><strong>Tipo:</strong> {projeto.tipo}</p>
         <p><strong>Escopo:</strong> {projeto.escopo}</p>
         <p><strong>Equipe:</strong> {projeto.equipe}</p>
@@ -391,10 +427,10 @@ export default function ProjetoDetalhes() {
                 {projeto.arquivos.map((arquivo, i) => (
                   <li key={i}>
                     <a
-                      href={`${id}/arquivo/${encodeURIComponent(arquivo.nome)}`}
+                      href={`${id}/arquivo/${encodeURIComponent(arquivo.label)}`}
                       className="text-blue-600 underline"
                     >
-                      {arquivo.nome}
+                      {arquivo.label}
                     </a>
                     <Button
                       onClick={() => confirmar("deseja excluir este arquivo", () => handleRemoverArquivo(arquivo))}
@@ -405,7 +441,7 @@ export default function ProjetoDetalhes() {
                   </li>
                 ))}
                 <input
-                  type="file"
+                  value="file"
                   onChange={handleUploadArquivo}
                   ref={inputArquivoRef}
                   className="hidden"
@@ -422,7 +458,7 @@ export default function ProjetoDetalhes() {
               <>
                 <p className="text-sm text-gray-500 mb-5">Nenhum arquivo enviado.</p>
                 <input
-                  type="file"
+                  value="file"
                   onChange={handleUploadArquivo}
                   ref={inputArquivoRef}
                   className="hidden"
@@ -456,11 +492,11 @@ export default function ProjetoDetalhes() {
               aberto={modalAberto}
               onClose={fecharModal}
               titulo={tipoModal === 'tarefa' ? 'Nova Tarefa' : 'Nova Subtarefa'}
-              onSalvar={(nome) => {
+              onSalvar={(label) => {
                 if (tipoModal === 'tarefa') {
-                  adicionarTarefa(grupoSelecionado, nome)
+                  adicionarTarefa(grupoSelecionado, label)
                 } else if (tipoModal === 'subtarefa') {
-                  adicionarSubtarefa(grupoSelecionado, tarefaSelecionada, nome)
+                  adicionarSubtarefa(grupoSelecionado, tarefaSelecionada, label)
                 }
               }}
             />
@@ -474,7 +510,7 @@ export default function ProjetoDetalhes() {
               <div key={grupoIndex} className="border border-gray-300 p-3 rounded mb-3">
 
                 <h3 className=" flex text-lg font-bold text-[#011A39] mb-2">
-                  {grupo.nome}:<div className='w-auto flex gap-3 mx-2'><p>-</p><p>-</p><p>-</p></div>
+                  {grupo.label}:<div className='w-auto flex gap-3 mx-2'><p>-</p><p>-</p><p>-</p></div>
                   <DropdownMenu
                     title=". . ."
                     items={[
@@ -489,14 +525,15 @@ export default function ProjetoDetalhes() {
                   <div key={tarefaIndex} className="border border-gray-300 p-3 rounded mb-3">
                     <div className='flex'>
                       <div className='mr-8'>
-                        <p className="font-semibold">{tarefa.nome}</p>
+                        <p className="font-semibold">{tarefa.label}</p>
                         <p>Status: <span className="capitalize">{tarefa.status || 'pendente'}</span></p>
                       </div>
                       <DropdownMenu
                         title=". . ."
                         items={[
                           (tarefa.status === 'pendente' && { label: 'Adicionar Tarefa', onClick: () => abrirModalSubtarefa(grupoIndex, tarefaIndex), variant: "if" }),
-                          { label: 'Remover Tarefa', onClick: () => confirmar("deseja excluir esta Tarefa", () => removerTarefa(grupoIndex, tarefaIndex)), variant: "dan" }
+                          { label: 'Remover Tarefa', onClick: () => confirmar("deseja excluir esta Tarefa", () => removerTarefa(grupoIndex, tarefaIndex)), variant: "dan" },
+                          { label: 'Adicionar campo', onClick: abrirModalCampoPersonalizado, variant: "if" }
                         ]}
                         variant='out'
                       />
@@ -535,13 +572,14 @@ export default function ProjetoDetalhes() {
                       <div key={subIndex} className="ml-4 mt-2 p-2 border-l-2 border-t-2 rounded-tl-lg border-gray-400">
                         <div className='flex'>
                           <div className="mr-8">
-                            <p>{sub.nome}</p>
+                            <p>{sub.label}</p>
                             <p className="text-sm text-gray-600">Status: <span className="capitalize">{sub.status || 'pendente'}</span></p>
                           </div>
                           <DropdownMenu
                             title=". . ."
                             items={[
-                              { label: 'Remover Subtarefa', onClick: () => confirmar("deseja excluir esta subtarefa", () => removerSubtarefa(grupoIndex, tarefaIndex, subIndex)), variant: "dan" }
+                              { label: 'Remover Subtarefa', onClick: () => confirmar("deseja excluir esta subtarefa", () => removerSubtarefa(grupoIndex, tarefaIndex, subIndex)), variant: "dan" },
+                              { label: 'Adicionar campo', onClick: abrirModalCampoPersonalizado, variant: "if" }
                             ]}
                             variant='out'
                           />
@@ -587,12 +625,12 @@ export default function ProjetoDetalhes() {
                   >
                     <option value="">Selecione um template</option>
                     {templatesDisponiveis.map((t, index) => (
-                      <option key={index} value={t.id}>{t.nome}</option>
+                      <option key={index} value={t.id}>{t.label}</option>
                     ))}
                   </select>
 
                   <div className="flex justify-end gap-2">
-                    <Button onClick={() => setShowModalTemplate(false)} variant="outline">Cancelar</Button>
+                    <Button onClick={() => setShowModalTemplate(false)} variant="out">Cancelar</Button>
                     <Button onClick={adicionarTemplateAoProjeto} disabled={!templateSelecionado}>Adicionar</Button>
                   </div>
                 </div>
@@ -604,6 +642,27 @@ export default function ProjetoDetalhes() {
           </>
         }
       </div>
+
+      {modalAbertoCampoPersonalizado && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+          <div className="bg-white p-6 rounded-xl shadow-xl w-full max-w-md">
+            <h2 className="text-lg font-semibold mb-4">Adicionar Campo</h2>
+            {/* Formulário do campo aqui */}
+            <input placeholder="label do campo" className="border w-full p-2 rounded mb-2" />
+            <select className="border w-full p-2 rounded mb-4">
+              {camposPerzonalizado.map((e) => (
+                <>
+                  <option value={e.value}>{e.label}</option>
+                </>
+              ))}
+            </select>
+            <div className="flex justify-end gap-2">
+              <Button onClick={fecharModalCampoPersonalizado} variant='out' >Cancelar</Button>
+              <Button onClick={() => { fecharModal() }} variant='final' >Salvar</Button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Tarefas ------ */}
     </div>
   )
