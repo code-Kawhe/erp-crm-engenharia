@@ -2,21 +2,24 @@
 
 import { useEffect, useState } from 'react'
 
-export default function MostraEspecial({ url, nome }) {
+export default function MostraEspecial({ url, inputFormat, outputFormat}) {
     const [downloadUrl, setDownloadUrl] = useState(null)
     const [loading, setLoading] = useState(true)
     const [erro, setErro] = useState(null)
+    const [enviado, setEnviado] = useState(false)
 
     useEffect(() => {
+        if (enviado) return
+        setEnviado(true)
         async function converterArquivo() {
             try {
                 const res = await fetch('/api/projetos/CloudConverter', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        fileUrl: url,
-                        inputFormat: 'dwg',
-                        outputFormat: 'pdf',
+                        url,
+                        inputFormat,
+                        outputFormat,
                     })
                 })
 

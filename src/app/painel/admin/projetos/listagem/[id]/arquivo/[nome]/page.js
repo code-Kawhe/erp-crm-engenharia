@@ -20,7 +20,6 @@ export default async   function VisualizarArquivo(props) {
   const isText = ['txt', 'md', 'json', 'csv', 'log', 'xml', 'html', 'js', 'yml'].includes(ext)
   const isWord = ['doc', 'docx'].includes(ext)
   const isExcel = ['xls', 'xlsx'].includes(ext)
-  const isSpecial = ['cdr', 'psd', 'ai', 'skp', 'dwg'].includes(ext)
 
   if (isText) {
     const response = await fetch(url)
@@ -66,13 +65,9 @@ export default async   function VisualizarArquivo(props) {
         />
       )}
 
-      {isSpecial && (
-        <MostraEspecial url={url} nome={decodedNome} />
-      )}
-
 
       {/* Outros arquivos não suportados */}
-      {!isImage && !isPDF && !isText && !isWord && (
+      {!isImage && !isPDF && !isText && !isWord &&  (
         <div className="p-6 text-center">
           <p className="mb-2">Visualização não suportada para este tipo de arquivo.</p>
           <a
