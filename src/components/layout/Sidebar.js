@@ -10,6 +10,7 @@ export default function Sidebar({ perfil }) {
     admin: [
       { href: '/painel/admin', label: 'Home' },
       { href: '/painel/admin/projetos', label: 'Projetos' },
+      { href: '/painel/admin/clientes', label: 'Clientes' },
       { href: '/painel/admin/usuarios', label: 'Usuários' },
     ],
     gestor: [
